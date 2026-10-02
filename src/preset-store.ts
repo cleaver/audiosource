@@ -8,7 +8,7 @@ import type {
 export type AudioPreset = AudioPresetDraft & { id: string };
 
 export type PresetStorage = {
-	getItem(key: string): Promise<string | undefined>;
+	getItem(key: string): Promise<string | null | undefined>;
 	setItem(key: string, value: string): Promise<void>;
 };
 
@@ -61,7 +61,7 @@ export class AudioPresetStore {
 
 	async list(): Promise<AudioPreset[]> {
 		const serialized = await this.storage.getItem(STORAGE_KEY);
-		if (serialized === undefined || serialized.length === 0) return [];
+		if (serialized == null || serialized.length === 0) return [];
 
 		let value: unknown;
 		try {
@@ -91,7 +91,7 @@ export class AudioPresetStore {
 
 	async getRestoreSnapshot(): Promise<AudioPresetDraft | undefined> {
 		const serialized = await this.storage.getItem(RESTORE_STORAGE_KEY);
-		if (serialized === undefined || serialized.length === 0) return undefined;
+		if (serialized == null || serialized.length === 0) return undefined;
 
 		let value: unknown;
 		try {

@@ -92,9 +92,20 @@
   - `tests/preset-availability.test.ts`
   - `task_plan.md`
 
+### Bug fix: null LocalStorage values
+- **Status:** complete
+- Actions taken:
+  - Reproduced the user's save error twice with a focused fake-storage test: `Cannot read properties of null (reading 'length')` in `AudioPresetStore.list()` during the initial save.
+  - Confirmed Vicinae's missing-key backend result is JSON null, while the SDK TypeScript declaration says undefined.
+  - Updated preset storage to handle null, undefined, and empty-string results for both preset and restore keys.
+  - The regression test confirms first save succeeds and an empty restore key reads as absent.
+  - All 17 behavior tests pass; build and lint pass.
+- Files modified:
+  - `src/preset-store.ts`, `tests/preset-store.test.ts`
+
 ### Next slice
 - **Status:** pending
-- Show disconnected preset targets as unavailable, then verify the Q30 hands-free workflow against the live system and add rename/delete actions.
+- Add rename/delete actions, then verify the Q30 hands-free workflow against the live system.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -110,6 +121,7 @@
 | Manual restore | Injected operations | Restore the prior profile before its input/output defaults | Pass | ✓ |
 | Apply rollback | Target endpoints remain absent after profile change | Roll back to prior profile/defaults and clear snapshot | Pass | ✓ |
 | Restore snapshot persistence | In-memory storage and a new store instance | Snapshot survives reload and clears after manual restore | Pass | ✓ |
+| Missing Vicinae storage key | Storage returns null for an empty key | First preset save works; restore key reads as absent | Reproduced original null.length failure, then passes after null-safe handling | ✓ |
 | Profile switching | Delayed fake card-profile update | Wait for selected profile, then return refreshed input/output inventory | Pass; first failed RED because profile helper was missing | ✓ |
 | Preset availability | Connected Q30 in A2DP, then disconnected Q30 | Treat HFP endpoints as reachable while HFP profile is available; otherwise mark unavailable | Pass; first failed RED because availability check was missing | ✓ |
 | Extension build/typecheck | `npm run build` | Typechecks and bundles the command | Pass | ✓ |
@@ -128,6 +140,7 @@
 | 2026-10-02 | Build rejected unsupported `Icon.List` in the preset action row | 1 | Changed the icon to the supported `Icon.Bookmark`. |
 | 2026-10-02 | Second behavior test imported the wrong module | 1 | Corrected the import to use the audio inventory interface. |
 | 2026-10-02 | Plan patch context changed during an earlier hunk | 1 | Reapplied the phase update separately. |
+| 2026-10-02 | First preset save failed because a missing Vicinae storage key returned `null` | Reproduced twice in a focused store test | Treat null, undefined, and empty-string values as empty storage. |
 
 ## 5-Question Reboot Check
 | Question | Answer |

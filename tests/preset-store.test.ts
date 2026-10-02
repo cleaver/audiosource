@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AudioPresetStore } from "../src/preset-store";
+import { AudioPresetStore, type PresetStorage } from "../src/preset-store";
 
 test("keeps a saved preset available after the store is reloaded", async () => {
 	const values = new Map<string, string>();
@@ -74,4 +74,26 @@ test("persists one restore snapshot and clears it after manual restore", async (
 	);
 	await store.clearRestoreSnapshot();
 	assert.equal(await store.getRestoreSnapshot(), undefined);
+});
+
+test("saves the first preset when Vicinae returns null for an empty key", async () => {
+	const values = new Map<string, string>();
+	const storage: PresetStorage = {
+		getItem: async (key: string) => values.get(key) ?? null,
+		setItem: async (key: string, value: string) => {
+			values.set(key, value);
+		},
+	};
+	const store = new AudioPresetStore(storage, () => "first-preset");
+
+	assert.deepEqual(await store.list(), []);
+	assert.equal(await store.getRestoreSnapshot(), undefined);
+	await store.save({
+		name: "Calls",
+		output: { name: "output.q30", description: "Q30 Handsfree" },
+		input: { name: "input.q30", description: "Q30 Microphone" },
+		profiles: [],
+	});
+
+	assert.equal((await store.list())[0]?.name, "Calls");
 });
