@@ -1,10 +1,10 @@
 # Vicinae Audio Switcher Plan
 
 ## Goal
-Draft an implementation plan for a local Vicinae extension that switches audio inputs and outputs and lets the user save and apply named combinations, including a Q30 hands-free call setup.
+Build a local Vicinae extension that switches audio inputs and outputs, manages named presets, and connects or disconnects known Bluetooth audio devices with visible status.
 
 ## Current Phase
-Phase 3: Finish and verify the manual preset workflow. Device discovery, profile switching, preset creation/application, restore, and unavailable-device status are implemented; preset editing and live hardware verification remain.
+Phase 3: Finish preset management and add known Bluetooth device controls. Device discovery, profiles, presets, restore, unavailable-device status, and friendly labels are implemented; preset editing, Bluetooth controls, and live verification remain.
 
 ## Phases
 
@@ -31,17 +31,21 @@ Phase 3: Finish and verify the manual preset workflow. Device discovery, profile
 - [x] Store and reload named presets using Vicinae `LocalStorage` as JSON text.
 - [x] Add a “Create preset” editor to select a name and currently available input/output without changing current defaults; capture the selected devices' active profiles.
 - [ ] Add rename and delete actions for saved presets.
+- [x] Add automatically inferred device labels and saved display-name aliases without changing stable audio IDs.
+- [ ] List paired Bluetooth audio devices even while disconnected and show connection state.
+- [ ] Add connect/disconnect actions for known Bluetooth devices.
+- [ ] Make Bluetooth connection reliable with bounded retries and state verification; report the final result clearly.
 - [x] Refresh device choices whenever the command opens.
 - [x] Keep saved presets when devices are disconnected.
 - [x] Mark disconnected preset targets unavailable until they reconnect; still allow endpoints hidden by an available inactive profile.
 - [x] Add a direct card-profile action to the device list and refresh inventory after the profile changes.
-- [ ] Add a Q30 call preset using the available HFP/MSBC profile, then resolve its newly created input and output nodes.
 - [x] Apply saved profiles first, wait for requested endpoints, change system defaults only, verify the result, and roll back best-effort if a step fails.
 - [x] Save a one-level “restore previous setup” snapshot in Vicinae `LocalStorage` as JSON text; offer manual restore.
 - **Status:** in_progress
 
 ### Phase 4: Verify and install for this user
-- [ ] Check behavior with Q30 in A2DP and hands-free profiles, including its input and output appearing/disappearing across profile changes.
+- [ ] Verify paired-device status and bounded connect retries against the live Bluetooth service when safe to do so.
+- [ ] Verify the Q30's connection state and audio endpoints across A2DP and hands-free profile changes; the user will create their own call preset.
 - [ ] Check ordinary USB devices, a missing/disconnected device, command errors, and restoring prior defaults/profile.
 - [ ] Verify applying a preset leaves already-running app streams on their current routes.
 - [x] Build and lint the extension, then load it in a Vicinae development session from this source tree.
@@ -58,7 +62,7 @@ Phase 3: Finish and verify the manual preset workflow. Device discovery, profile
 - Direct actions to set the default input or output.
 - Create a preset from the current system setup, or define one by selecting currently connected input/output devices. Active profiles for those devices are captured; also support rename, edit, and delete.
 - Keep saved device targets when disconnected and show them as unavailable until they return. A not-yet-connected device cannot be selected yet.
-- A “Calls — Q30 hands-free” preset that activates the headset's HFP hands-free profile and selects both resulting endpoints.
+- Provide profile switching and endpoint discovery so the user can create a “Calls — Q30 hands-free” preset themselves.
 - A manually invoked restore action that returns to the setup captured just before the last preset application.
 - Manual activation in version one; do not monitor apps or detect call end.
 - Applying a preset changes defaults for new streams without moving existing app streams.
@@ -68,6 +72,7 @@ Phase 3: Finish and verify the manual preset workflow. Device discovery, profile
 - Provide a manual action to restore the prior audio profile and system defaults after a call preset.
 - Change system defaults only; do not move existing app streams.
 - Do not detect call end; the user will switch back manually.
+- The user will create their own Q30 call preset; adding that specific preset is outside this implementation task.
 
 ## Decisions Made
 | Decision | Rationale |
@@ -80,6 +85,9 @@ Phase 3: Finish and verify the manual preset workflow. Device discovery, profile
 | Keep call activation and restore manual | User will switch back manually and does not want call-end detection. |
 | The first slice is a read-only device/profile list | Establishes discovery and in-launch freshness without changing system audio. |
 | Direct selection uses only `set-default-sink` or `set-default-source` | Matches the user's request to leave active app streams where they are. |
+| Keep the example Q30 call preset user-owned | The profile picker and preset editor already let the user create it. |
+| Show paired Bluetooth devices independently of active audio cards | Disconnected devices are absent from PipeWire's card inventory, but should remain connectable from Vicinae. |
+| Retry Bluetooth connection a bounded number of times and verify state | Addresses intermittent connection attempts without leaving background retries running. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -92,3 +100,4 @@ Phase 3: Finish and verify the manual preset workflow. Device discovery, profile
 | Manifest category `Utilities` is not supported | 1 | Changed it to the allowed `System` category. |
 | SDK has no `Icon.Audio` icon | 1 | Used the supported speaker icon for device profiles. |
 | First preset form build found a loosely typed test double | 1 | Gave the fake saver the real draft/result types and rebuilt successfully. |
+| Scope update patch did not match the decision table | 1 | Split it into smaller patches against the current headings. |

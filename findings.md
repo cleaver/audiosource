@@ -7,6 +7,8 @@
 - Feature scope is open; user asked for a draft plan and invited clarifying questions.
 - Confirmed choices: manual quick actions; a manual restore action for the prior setup; change defaults for new streams only; do not detect call end because the user will switch back manually.
 - Preset definition should support saving the current setup and selecting from newly discovered devices; an absent device stays saved but unavailable until it reconnects.
+- The user will define their own Q30 call preset in the extension; the project should not ship a preset specific to their headset.
+- Add controls for already-paired Bluetooth audio devices: show live connection status, connect/disconnect on demand, and retry connection a small bounded number of times with state verification.
 
 ## System Findings
 - Workspace `audiosource` was empty; the neighboring `/home/cleaver/Documents/projects/build/vicinae` checkout contains Vicinae's TypeScript extension SDK and boilerplate.
@@ -15,6 +17,7 @@
 - At inspection time the Q30 was the default output and the Anker PowerConf C200 was the default input. Activating HFP changes the Q30's available nodes, so the extension must switch the card profile before resolving/setting its input and output.
 - `wpctl`/`pactl` numeric object IDs are session-specific. Store stable card/node names or identifying properties and re-query after transitions.
 - `pactl --format=json list cards` returns each card's active profile and available profiles. Sink/source JSON exposes a stable node `name` and `properties.device.name`; monitor sources are marked with `properties.device.class = "monitor"` and should not be offered as microphones.
+- The device-label slice now reads card and endpoint metadata such as bus, product name, node nickname, and active port; common built-in, HDMI, USB, and Bluetooth devices receive short labels, while unknown devices retain their descriptions.
 - Installed versions: Vicinae v0.23.2, Node v24.21.0, npm v11.13.0. The `vici` executable is not global; extension scripts should invoke the project-local SDK CLI.
 
 ## Vicinae Findings

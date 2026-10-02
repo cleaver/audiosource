@@ -103,9 +103,32 @@
 - Files modified:
   - `src/preset-store.ts`, `tests/preset-store.test.ts`
 
+### Phase 3: Automatic device names and aliases
+- **Status:** complete
+- Actions taken:
+  - Added inferred labels for built-in, HDMI/DisplayPort, USB, and Bluetooth endpoints, including monitor name and port-number disambiguation.
+  - Added persistent per-device display-name aliases and actions to edit or return to automatic labels.
+  - Kept device names/IDs used for preset switching unchanged; updated device/profile/preset UI and forms to show friendly labels.
+  - Live read-only inventory produced `HDMI · ASUS VG289`, `Built-in · Speaker`, and distinct digital/stereo microphone labels.
+  - All 22 behavior tests passed; build and manifest lint passed.
+- Commit: `80cd0c5 feat(labels): add automatic device aliases`
+
+### User scope update: preset ownership and Bluetooth controls
+- **Status:** in_progress
+- Actions taken:
+  - The user will create their own Q30 call preset; removed that one-off setup from the implementation checklist.
+  - Added work to list paired Bluetooth devices with status, provide connect/disconnect actions, and implement bounded connect retries with final-state verification.
+  - Kept profile switching and endpoint discovery in scope so the user can make presets themselves.
+  - Added live Bluetooth/preset verification tasks to Phase 4.
+- Next slices:
+  1. Rename/delete saved presets.
+  2. Discover paired Bluetooth devices and report connection status.
+  3. Add connect/disconnect controls and reliable bounded connection attempts.
+  4. Complete non-disruptive live checks and visual inspection.
+
 ### Next slice
 - **Status:** pending
-- Add rename/delete actions, then verify the Q30 hands-free workflow against the live system.
+- Implement preset rename/delete and Bluetooth controls, then perform the remaining live and visual verification.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -145,8 +168,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Device inventory, default selection, direct profile switching, preset creation/application, restore, and unavailable-device indicators are implemented. |
-| Where am I going? | Add rename/delete, then complete live Q30 and disconnected-device verification. |
-| What's the goal? | Plan a Vicinae extension for audio device switching and saved activity presets. |
+| Where am I? | Device inventory, default selection, direct profile switching, presets/restore, unavailable-device indicators, and friendly aliases are implemented. |
+| Where am I going? | Add preset rename/delete and paired Bluetooth status/connect/disconnect, then finish safe live and visual verification. |
+| What's the goal? | Build a Vicinae extension for audio switching, user-defined presets, and known Bluetooth device management. |
 | What have I learned? | See `findings.md`. |
-| What have I done? | Completed red-green inventory, selection, preset creation, application, and restore slices; the current extension builds and is registered in Vicinae development mode. |
+| What have I done? | Completed red-green inventory, selection, preset creation/application/restore, availability, and friendly-label slices; extension builds and is registered in Vicinae development mode. |
