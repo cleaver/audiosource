@@ -145,6 +145,7 @@
 - Files modified:
   - `src/bluetooth-devices.ts`, `src/audio-devices.tsx`
   - `tests/bluetooth-devices.test.ts`
+- Commit: `7a9894a feat(audio): add bluetooth and preset controls`
 
 ### Phase 3: Edit an existing preset
 - **Status:** complete
@@ -154,6 +155,11 @@
   - Added storage update behavior that changes the preset in place and keeps its ID.
   - TDD: added in-place update, missing-ID, preserved unavailable target/profile, changed target, and incompatible profile tests; observed RED before implementing, then GREEN.
   - Rebuilt the installed user extension successfully.
+- Files modified:
+  - `src/create-preset-form.tsx`, `src/preset-model.ts`, `src/preset-store.ts`, `src/audio-devices.tsx`
+  - `tests/preset-creation.test.ts`, `tests/preset-store.test.ts`
+- Commit: `95c603f feat(presets): edit saved audio presets`
+- Final code checks: 38 behavior tests pass; build and manifest lint pass; `vicinae cmd ls` lists `@local/audio-switcher:audio-devices`.
 
 ### Next slice
 - **Status:** pending
