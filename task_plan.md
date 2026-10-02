@@ -34,7 +34,7 @@ Phase 3: Build and verify the manual preset workflow. Device discovery, default 
 - [x] Refresh device choices whenever the command opens.
 - [x] Keep saved presets when devices are disconnected.
 - [ ] Mark disconnected preset targets unavailable until they reconnect.
-- [ ] Add a direct card-profile action to the device list and refresh inventory after the profile changes.
+- [x] Add a direct card-profile action to the device list and refresh inventory after the profile changes.
 - [ ] Add a Q30 call preset using the available HFP/MSBC profile, then resolve its newly created input and output nodes.
 - [x] Apply saved profiles first, wait for requested endpoints, change system defaults only, verify the result, and roll back best-effort if a step fails.
 - [x] Save a one-level “restore previous setup” snapshot in Vicinae `LocalStorage` as JSON text; offer manual restore.

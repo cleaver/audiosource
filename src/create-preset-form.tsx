@@ -116,7 +116,7 @@ export function CreatePresetForm({
 			</Form.Dropdown>
 			<Form.Description
 				title="Profile behavior"
-				text="The active profiles of selected devices are included. To save a different Bluetooth profile, activate it first, then reopen this command to refresh device choices."
+				text="The active profiles of selected devices are included. To use another profile, activate it from Device Profiles first, then open this form to choose its endpoints."
 			/>
 		</Form>
 	);

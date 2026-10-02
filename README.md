@@ -10,7 +10,7 @@ A local Vicinae extension for selecting audio inputs and outputs and managing au
 - Select a saved preset and choose **Apply Preset**. The extension activates saved profiles first, waits for their endpoints, then changes system defaults. Existing app streams stay on their current routes.
 - Choose **Restore Previous Setup** to manually return to the defaults and profiles from just before the most recent preset application.
 
-New devices appear when **Audio Devices** is opened again. To save a profile whose endpoints are currently hidden (such as a Bluetooth hands-free profile), activate that profile in the system audio settings first, reopen the command, then create or save the preset. Applying the saved preset can activate that profile itself.
+New devices appear when **Audio Devices** is opened again. To save a profile whose endpoints are currently hidden (such as Bluetooth hands-free), open that device's profile picker and activate the profile first. The device list refreshes, so you can then create or save a preset with its new endpoints. Applying the saved preset can activate that profile itself.
 
 ## Development
 

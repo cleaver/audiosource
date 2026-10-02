@@ -68,9 +68,21 @@
   - `tests/audio-selection.test.ts`, `tests/preset-creation.test.ts`, `tests/preset-application.test.ts`, `tests/preset-store.test.ts`
   - `README.md`, `task_plan.md`
 
+### Phase 3: Switch device profiles from Vicinae
+- **Status:** complete
+- Actions taken:
+  - Added a per-card profile picker for available profiles, with the current profile marked active.
+  - Activating a profile waits for the card state to update, then refreshes the device list so newly created inputs and outputs appear.
+  - TDD: wrote a behavior test first, observed RED for the missing profile action, implemented it, and reached GREEN.
+  - Formatted, tested, built, and linted; all 14 behavior tests pass.
+- Files created/modified:
+  - `src/card-profile-picker.tsx`, `src/preset-actions.ts`, `src/audio-devices.tsx`, `src/create-preset-form.tsx`
+  - `tests/profile-switching.test.ts`
+  - `README.md`, `task_plan.md`
+
 ### Next slice
 - **Status:** pending
-- Add direct profile switching and show disconnected preset targets as unavailable. Then verify the Q30 hands-free workflow against the live system and add rename/delete actions.
+- Show disconnected preset targets as unavailable, then verify the Q30 hands-free workflow against the live system and add rename/delete actions.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -86,6 +98,7 @@
 | Manual restore | Injected operations | Restore the prior profile before its input/output defaults | Pass | ✓ |
 | Apply rollback | Target endpoints remain absent after profile change | Roll back to prior profile/defaults and clear snapshot | Pass | ✓ |
 | Restore snapshot persistence | In-memory storage and a new store instance | Snapshot survives reload and clears after manual restore | Pass | ✓ |
+| Profile switching | Delayed fake card-profile update | Wait for selected profile, then return refreshed input/output inventory | Pass; first failed RED because profile helper was missing | ✓ |
 | Extension build/typecheck | `npm run build` | Typechecks and bundles the command | Pass | ✓ |
 | Manifest validation | `npm run lint` | Manifest accepted | Pass | ✓ |
 

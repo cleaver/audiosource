@@ -8,6 +8,7 @@ import {
 	Toast,
 } from "@vicinae/api";
 import { useEffect, useState } from "react";
+import { CardProfilePicker } from "./card-profile-picker";
 import {
 	readAudioInventory,
 	setCardProfile,
@@ -329,6 +330,21 @@ export default function AudioDevices() {
 										text: `${card.profiles.filter((profile) => profile.available).length} available`,
 									},
 								]}
+								actions={
+									<ActionPanel>
+										<Action.Push
+											title="Choose Device Profile"
+											icon={Icon.Checkmark}
+											target={
+												<CardProfilePicker
+													card={card}
+													execution={presetExecution}
+													onChanged={setInventory}
+												/>
+											}
+										/>
+									</ActionPanel>
+								}
 							/>
 						))}
 					</List.Section>

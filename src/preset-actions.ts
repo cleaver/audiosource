@@ -27,6 +27,11 @@ export type PresetExecution = {
 	delay?: (milliseconds: number) => Promise<void>;
 };
 
+export type ProfileChangeExecution = Pick<
+	PresetExecution,
+	"readInventory" | "setCardProfile" | "delay"
+>;
+
 const PROFILE_POLL_ATTEMPTS = 12;
 const PROFILE_POLL_INTERVAL_MS = 150;
 
@@ -169,4 +174,55 @@ export async function restoreAudioSetup(
 	execution: PresetExecution,
 ): Promise<AudioInventory> {
 	return applySetup(setup, execution);
+}
+
+export async function changeAudioCardProfile(
+	cardName: string,
+	profileName: string,
+	execution: ProfileChangeExecution,
+): Promise<AudioInventory> {
+	const initial = await execution.readInventory();
+	const card = initial.cards.find((candidate) => candidate.name === cardName);
+	if (!card) throw new Error(`Audio device is unavailable: ${cardName}`);
+	if (card.activeProfile === profileName) return initial;
+	if (
+		!card.profiles.some(
+			(profile) => profile.name === profileName && profile.available,
+		)
+	) {
+		throw new Error(`Audio profile is unavailable: ${profileName}`);
+	}
+	if (!card.activeProfile) {
+		throw new Error(`Current audio profile is unknown for ${cardName}`);
+	}
+
+	await execution.setCardProfile(cardName, profileName);
+	for (let attempt = 0; attempt < PROFILE_POLL_ATTEMPTS; attempt += 1) {
+		const updated = await execution.readInventory();
+		const updatedCard = updated.cards.find(
+			(candidate) => candidate.name === cardName,
+		);
+		if (updatedCard?.activeProfile === profileName) {
+			await (
+				execution.delay ??
+				((milliseconds) =>
+					new Promise((resolve) => setTimeout(resolve, milliseconds)))
+			)(PROFILE_POLL_INTERVAL_MS);
+			return execution.readInventory();
+		}
+		await (
+			execution.delay ??
+			((milliseconds) =>
+				new Promise((resolve) => setTimeout(resolve, milliseconds)))
+		)(PROFILE_POLL_INTERVAL_MS);
+	}
+
+	try {
+		await execution.setCardProfile(cardName, card.activeProfile);
+	} catch (reason) {
+		throw new Error(
+			`Audio profile did not change to ${profileName}; rollback failed: ${messageOf(reason)}`,
+		);
+	}
+	throw new Error(`Audio profile did not change to ${profileName}`);
 }
