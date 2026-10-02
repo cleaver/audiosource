@@ -9,7 +9,12 @@ test("lists selectable devices and profiles with current defaults", async () => 
 			JSON.stringify([
 				{
 					name: "bluez_card.q30",
-					properties: { "device.description": "soundcore Life Q30" },
+					properties: {
+						"device.description": "soundcore Life Q30",
+						"device.bus": "bluetooth",
+						"device.product.name": "soundcore Life Q30",
+						"device.form_factor": "headset",
+					},
 					active_profile: "a2dp-sink",
 					profiles: {
 						"a2dp-sink": {
@@ -32,9 +37,20 @@ test("lists selectable devices and profiles with current defaults", async () => 
 				{
 					name: "bluez_output.q30",
 					description: "soundcore Life Q30",
+					active_port: "headset-output",
+					ports: [
+						{
+							name: "headset-output",
+							description: "Headphones",
+						},
+					],
 					properties: {
 						"device.name": "bluez_card.q30",
 						"device.class": "sound",
+						"node.nick": "Life Q30",
+						"device.bus": "bluetooth",
+						"device.product.name": "soundcore Life Q30",
+						"device.form_factor": "headset",
 					},
 				},
 				{
@@ -84,6 +100,20 @@ test("lists selectable devices and profiles with current defaults", async () => 
 		"bluez_output.q30",
 	);
 	assert.deepEqual(
+		inventory.outputs.find((device) => device.name === "bluez_output.q30"),
+		{
+			name: "bluez_output.q30",
+			description: "soundcore Life Q30",
+			deviceName: "bluez_card.q30",
+			nickname: "Life Q30",
+			portDescription: "Headphones",
+			deviceBus: "bluetooth",
+			deviceProductName: "soundcore Life Q30",
+			deviceFormFactor: "headset",
+			isDefault: true,
+		},
+	);
+	assert.deepEqual(
 		inventory.inputs.map(({ name, isDefault }) => ({ name, isDefault })),
 		[{ name: "bluez_input.q30", isDefault: true }],
 	);
@@ -91,6 +121,9 @@ test("lists selectable devices and profiles with current defaults", async () => 
 		name: "bluez_card.q30",
 		description: "soundcore Life Q30",
 		activeProfile: "a2dp-sink",
+		deviceBus: "bluetooth",
+		deviceProductName: "soundcore Life Q30",
+		deviceFormFactor: "headset",
 		profiles: [
 			{
 				name: "a2dp-sink",

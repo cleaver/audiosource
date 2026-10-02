@@ -8,18 +8,21 @@ import {
 	useNavigation,
 } from "@vicinae/api";
 import type { AudioInventory } from "./audio-inventory";
+import { getEndpointDisplayName, type DeviceAliases } from "./device-labels";
 import { createPresetFromSelection } from "./preset-model";
 import type { PresetSaver } from "./preset-actions";
 import type { AudioPreset } from "./preset-store";
 
 type CreatePresetFormProps = {
 	inventory: AudioInventory;
+	aliases: DeviceAliases;
 	saver: PresetSaver;
 	onSaved: (preset: AudioPreset) => void;
 };
 
 export function CreatePresetForm({
 	inventory,
+	aliases,
 	saver,
 	onSaved,
 }: CreatePresetFormProps) {
@@ -94,7 +97,7 @@ export function CreatePresetForm({
 					<Form.Dropdown.Item
 						key={device.name}
 						value={device.name}
-						title={`${device.description} — ${device.name}`}
+						title={`${getEndpointDisplayName(device, inventory, aliases)} — ${device.description}`}
 					/>
 				))}
 			</Form.Dropdown>
@@ -110,7 +113,7 @@ export function CreatePresetForm({
 					<Form.Dropdown.Item
 						key={device.name}
 						value={device.name}
-						title={`${device.description} — ${device.name}`}
+						title={`${getEndpointDisplayName(device, inventory, aliases)} — ${device.description}`}
 					/>
 				))}
 			</Form.Dropdown>

@@ -9,6 +9,8 @@ import {
 } from "@vicinae/api";
 import { useEffect, useState } from "react";
 import { CardProfilePicker } from "./card-profile-picker";
+import { DeviceAliasForm } from "./device-alias-form";
+import { DeviceAliasStore } from "./device-alias-store";
 import {
 	readAudioInventory,
 	setCardProfile,
@@ -24,8 +26,19 @@ import {
 import { SavePresetForm } from "./save-preset-form";
 import { AudioPresetStore, type AudioPreset } from "./preset-store";
 import { getPresetAvailability, type AudioPresetDraft } from "./preset-model";
+import {
+	getCardDisplayName,
+	getDeviceAliasKey,
+	getEndpointDisplayName,
+	type DeviceAliases,
+} from "./device-labels";
 
 const presetStore = new AudioPresetStore({
+	getItem: (key) => LocalStorage.getItem<string>(key),
+	setItem: (key, value) => LocalStorage.setItem(key, value),
+});
+
+const deviceAliasStore = new DeviceAliasStore({
 	getItem: (key) => LocalStorage.getItem<string>(key),
 	setItem: (key, value) => LocalStorage.setItem(key, value),
 });
@@ -41,9 +54,11 @@ const presetExecution: PresetExecution = {
 export default function AudioDevices() {
 	const [inventory, setInventory] = useState<AudioInventory | null>(null);
 	const [presets, setPresets] = useState<AudioPreset[]>([]);
+	const [deviceAliases, setDeviceAliases] = useState<DeviceAliases>({});
 	const [restoreSnapshot, setRestoreSnapshot] =
 		useState<AudioPresetDraft | null>(null);
 	const [presetError, setPresetError] = useState<string | null>(null);
+	const [deviceAliasError, setDeviceAliasError] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const applyDefault = async (
@@ -103,11 +118,62 @@ export default function AudioDevices() {
 				}
 			},
 		);
+		deviceAliasStore.list().then(
+			(result) => {
+				if (isCurrent) setDeviceAliases(result);
+			},
+			(reason: unknown) => {
+				if (isCurrent) {
+					setDeviceAliasError(
+						reason instanceof Error ? reason.message : String(reason),
+					);
+				}
+			},
+		);
 
 		return () => {
 			isCurrent = false;
 		};
 	}, []);
+
+	const editDeviceName = (deviceName: string, automaticName: string) => (
+		<Action.Push
+			title={
+				deviceAliases[deviceName] ? "Edit Display Name" : "Set Display Name"
+			}
+			icon={Icon.Pencil}
+			target={
+				<DeviceAliasForm
+					deviceName={deviceName}
+					automaticName={automaticName}
+					currentAlias={deviceAliases[deviceName]}
+					store={deviceAliasStore}
+					onSaved={(alias) =>
+						setDeviceAliases((current) => {
+							const updated = { ...current };
+							if (alias) updated[deviceName] = alias;
+							else delete updated[deviceName];
+							return updated;
+						})
+					}
+				/>
+			}
+		/>
+	);
+
+	const describePresetEndpoint = (
+		target: { name: string; description: string; deviceName?: string },
+		endpoints: AudioInventory["outputs"],
+		currentInventory: AudioInventory,
+	) => {
+		const endpoint = endpoints.find(
+			(candidate) => candidate.name === target.name,
+		);
+		return endpoint
+			? getEndpointDisplayName(endpoint, currentInventory, deviceAliases)
+			: (target.deviceName && deviceAliases[target.deviceName]) ||
+					target.description;
+	};
 
 	const applyPreset = async (preset: AudioPreset) => {
 		try {
@@ -201,6 +267,7 @@ export default function AudioDevices() {
 										target={
 											<SavePresetForm
 												inventory={inventory}
+												aliases={deviceAliases}
 												saver={presetStore}
 												onSaved={(preset) =>
 													setPresets((current) => [...current, preset])
@@ -223,6 +290,7 @@ export default function AudioDevices() {
 										target={
 											<CreatePresetForm
 												inventory={inventory}
+												aliases={deviceAliases}
 												saver={presetStore}
 												onSaved={(preset) =>
 													setPresets((current) => [...current, preset])
@@ -240,13 +308,22 @@ export default function AudioDevices() {
 								icon={Icon.Warning}
 							/>
 						)}
+						{deviceAliasError && (
+							<List.Item
+								title="Could not load device names"
+								subtitle={deviceAliasError}
+								icon={Icon.Warning}
+							/>
+						)}
 						{presets.map((preset) => {
 							const availability = getPresetAvailability(preset, inventory);
 							const details = [
 								!availability.available &&
 									`Unavailable: ${availability.unavailableTargets.join(", ")}`,
-								preset.output && `Output: ${preset.output.description}`,
-								preset.input && `Input: ${preset.input.description}`,
+								preset.output &&
+									`Output: ${describePresetEndpoint(preset.output, inventory.outputs, inventory)}`,
+								preset.input &&
+									`Input: ${describePresetEndpoint(preset.input, inventory.inputs, inventory)}`,
 								...preset.profiles.map((profile) => profile.profileName),
 							].filter(Boolean);
 							return (
@@ -271,51 +348,73 @@ export default function AudioDevices() {
 						})}
 					</List.Section>
 					<List.Section title="Outputs">
-						{inventory.outputs.map((device) => (
-							<List.Item
-								key={device.name}
-								title={device.description}
-								subtitle={device.name}
-								icon={Icon.SpeakerHigh}
-								accessories={device.isDefault ? [{ text: "Default" }] : []}
-								actions={
-									<ActionPanel>
-										<Action
-											title="Set as Default Output"
-											icon={Icon.Checkmark}
-											onAction={() =>
-												applyDefault("output", device.name, "output")
-											}
-										/>
-									</ActionPanel>
-								}
-							/>
-						))}
+						{inventory.outputs.map((device) => {
+							const aliasKey = getDeviceAliasKey(device);
+							return (
+								<List.Item
+									key={device.name}
+									title={getEndpointDisplayName(
+										device,
+										inventory,
+										deviceAliases,
+									)}
+									subtitle={`${device.description} · ${device.name}`}
+									icon={Icon.SpeakerHigh}
+									accessories={device.isDefault ? [{ text: "Default" }] : []}
+									actions={
+										<ActionPanel>
+											<Action
+												title="Set as Default Output"
+												icon={Icon.Checkmark}
+												onAction={() =>
+													applyDefault("output", device.name, "output")
+												}
+											/>
+											{editDeviceName(
+												aliasKey,
+												getEndpointDisplayName(device, inventory, {}),
+											)}
+										</ActionPanel>
+									}
+								/>
+							);
+						})}
 						{inventory.outputs.length === 0 && (
 							<List.Item title="No outputs available" icon={Icon.SpeakerOff} />
 						)}
 					</List.Section>
 					<List.Section title="Inputs">
-						{inventory.inputs.map((device) => (
-							<List.Item
-								key={device.name}
-								title={device.description}
-								subtitle={device.name}
-								icon={Icon.Microphone}
-								accessories={device.isDefault ? [{ text: "Default" }] : []}
-								actions={
-									<ActionPanel>
-										<Action
-											title="Set as Default Input"
-											icon={Icon.Checkmark}
-											onAction={() =>
-												applyDefault("input", device.name, "input")
-											}
-										/>
-									</ActionPanel>
-								}
-							/>
-						))}
+						{inventory.inputs.map((device) => {
+							const aliasKey = getDeviceAliasKey(device);
+							return (
+								<List.Item
+									key={device.name}
+									title={getEndpointDisplayName(
+										device,
+										inventory,
+										deviceAliases,
+									)}
+									subtitle={`${device.description} · ${device.name}`}
+									icon={Icon.Microphone}
+									accessories={device.isDefault ? [{ text: "Default" }] : []}
+									actions={
+										<ActionPanel>
+											<Action
+												title="Set as Default Input"
+												icon={Icon.Checkmark}
+												onAction={() =>
+													applyDefault("input", device.name, "input")
+												}
+											/>
+											{editDeviceName(
+												aliasKey,
+												getEndpointDisplayName(device, inventory, {}),
+											)}
+										</ActionPanel>
+									}
+								/>
+							);
+						})}
 						{inventory.inputs.length === 0 && (
 							<List.Item
 								title="No inputs available"
@@ -327,8 +426,8 @@ export default function AudioDevices() {
 						{inventory.cards.map((card) => (
 							<List.Item
 								key={card.name}
-								title={card.description}
-								subtitle={`Active profile: ${card.activeProfile || "Unknown"}`}
+								title={getCardDisplayName(card, deviceAliases)}
+								subtitle={`${card.description} · Active profile: ${card.activeProfile || "Unknown"}`}
 								icon={Icon.SpeakerHigh}
 								accessories={[
 									{
@@ -343,11 +442,13 @@ export default function AudioDevices() {
 											target={
 												<CardProfilePicker
 													card={card}
+													aliases={deviceAliases}
 													execution={presetExecution}
 													onChanged={setInventory}
 												/>
 											}
 										/>
+										{editDeviceName(card.name, getCardDisplayName(card, {}))}
 									</ActionPanel>
 								}
 							/>

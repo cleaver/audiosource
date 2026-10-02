@@ -8,11 +8,17 @@ import {
 	useNavigation,
 } from "@vicinae/api";
 import type { AudioInventory } from "./audio-inventory";
+import {
+	getCardDisplayName,
+	getEndpointDisplayName,
+	type DeviceAliases,
+} from "./device-labels";
 import { saveCurrentSetupAsPreset, type PresetSaver } from "./preset-actions";
 import type { AudioPreset } from "./preset-store";
 
 type SavePresetFormProps = {
 	inventory: AudioInventory;
+	aliases: DeviceAliases;
 	saver: PresetSaver;
 	onSaved: (preset: AudioPreset) => void;
 };
@@ -20,12 +26,16 @@ type SavePresetFormProps = {
 function defaultDescription(
 	kind: "Input" | "Output",
 	devices: AudioInventory["inputs"],
+	inventory: AudioInventory,
+	aliases: DeviceAliases,
 ) {
-	return `${kind}: ${devices.find((device) => device.isDefault)?.description ?? "Not set"}`;
+	const endpoint = devices.find((device) => device.isDefault);
+	return `${kind}: ${endpoint ? getEndpointDisplayName(endpoint, inventory, aliases) : "Not set"}`;
 }
 
 export function SavePresetForm({
 	inventory,
+	aliases,
 	saver,
 	onSaved,
 }: SavePresetFormProps) {
@@ -39,7 +49,9 @@ export function SavePresetForm({
 	);
 	const activeProfiles = inventory.cards
 		.filter((card) => selectedCardNames.has(card.name) && card.activeProfile)
-		.map((card) => `${card.description} — ${card.activeProfile}`);
+		.map(
+			(card) => `${getCardDisplayName(card, aliases)} — ${card.activeProfile}`,
+		);
 
 	const submit = async (values: Form.Values) => {
 		if (typeof values.name !== "string") {
@@ -95,8 +107,8 @@ export function SavePresetForm({
 			<Form.Description
 				title="Captured setup"
 				text={[
-					defaultDescription("Output", inventory.outputs),
-					defaultDescription("Input", inventory.inputs),
+					defaultDescription("Output", inventory.outputs, inventory, aliases),
+					defaultDescription("Input", inventory.inputs, inventory, aliases),
 					`Profiles captured: ${activeProfiles.join(", ") || "None"}`,
 				].join("\n")}
 			/>

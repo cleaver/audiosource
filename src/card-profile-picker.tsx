@@ -8,6 +8,7 @@ import {
 	useNavigation,
 } from "@vicinae/api";
 import type { AudioCard, AudioInventory } from "./audio-inventory";
+import { getCardDisplayName, type DeviceAliases } from "./device-labels";
 import {
 	changeAudioCardProfile,
 	type ProfileChangeExecution,
@@ -15,12 +16,14 @@ import {
 
 type CardProfilePickerProps = {
 	card: AudioCard;
+	aliases: DeviceAliases;
 	execution: ProfileChangeExecution;
 	onChanged: (inventory: AudioInventory) => void;
 };
 
 export function CardProfilePicker({
 	card,
+	aliases,
 	execution,
 	onChanged,
 }: CardProfilePickerProps) {
@@ -53,7 +56,7 @@ export function CardProfilePicker({
 	);
 
 	return (
-		<List navigationTitle={`${card.description} Profiles`}>
+		<List navigationTitle={`${getCardDisplayName(card, aliases)} Profiles`}>
 			<List.Section title="Available Profiles">
 				{profiles.map((profile) => {
 					const isActive = profile.name === card.activeProfile;

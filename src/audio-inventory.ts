@@ -11,12 +11,21 @@ export type AudioCard = {
 	description: string;
 	activeProfile: string;
 	profiles: AudioProfile[];
+	deviceBus?: string;
+	deviceProductName?: string;
+	deviceFormFactor?: string;
+	alsaMixerName?: string;
 };
 
 export type AudioEndpoint = {
 	name: string;
 	description: string;
 	deviceName?: string;
+	nickname?: string;
+	portDescription?: string;
+	deviceBus?: string;
+	deviceProductName?: string;
+	deviceFormFactor?: string;
 	isDefault: boolean;
 };
 
@@ -122,6 +131,18 @@ function parseCards(json: string): AudioCard[] {
 				name,
 				description: readString(properties["device.description"]) ?? name,
 				activeProfile: readString(card.active_profile) ?? "",
+				...(readString(properties["device.bus"])
+					? { deviceBus: readString(properties["device.bus"]) }
+					: {}),
+				...(readString(properties["device.product.name"])
+					? { deviceProductName: readString(properties["device.product.name"]) }
+					: {}),
+				...(readString(properties["device.form_factor"])
+					? { deviceFormFactor: readString(properties["device.form_factor"]) }
+					: {}),
+				...(readString(properties["alsa.mixer_name"])
+					? { alsaMixerName: readString(properties["alsa.mixer_name"]) }
+					: {}),
 				profiles,
 			},
 		];
@@ -150,11 +171,38 @@ function parseEndpoints(
 			const properties = isRecord(endpoint.properties)
 				? endpoint.properties
 				: {};
+			const ports = Array.isArray(endpoint.ports)
+				? endpoint.ports.filter(isRecord)
+				: [];
+			const activePort = readString(endpoint.active_port);
+			const activePortDescription = activePort
+				? ports.find((port) => readString(port.name) === activePort)
+						?.description
+				: undefined;
 			return [
 				{
 					name,
 					description: readString(endpoint.description) ?? name,
 					deviceName: readString(properties["device.name"]),
+					...(readString(properties["node.nick"])
+						? { nickname: readString(properties["node.nick"]) }
+						: {}),
+					...(readString(activePortDescription)
+						? { portDescription: readString(activePortDescription) }
+						: {}),
+					...(readString(properties["device.bus"])
+						? { deviceBus: readString(properties["device.bus"]) }
+						: {}),
+					...(readString(properties["device.product.name"])
+						? {
+								deviceProductName: readString(
+									properties["device.product.name"],
+								),
+							}
+						: {}),
+					...(readString(properties["device.form_factor"])
+						? { deviceFormFactor: readString(properties["device.form_factor"]) }
+						: {}),
 					isDefault: name === defaultName,
 				},
 			];
