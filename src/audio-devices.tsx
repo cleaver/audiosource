@@ -445,6 +445,28 @@ export default function AudioDevices() {
 													/>
 												}
 											/>
+											<Action.Push
+												title="Edit Preset"
+												icon={Icon.Pencil}
+												target={
+													<CreatePresetForm
+														inventory={inventory}
+														aliases={deviceAliases}
+														saver={presetStore}
+														preset={preset}
+														update={(id, draft) =>
+															presetStore.update(id, draft)
+														}
+														onSaved={(updated) =>
+															setPresets((current) =>
+																current.map((item) =>
+																	item.id === updated.id ? updated : item,
+																),
+															)
+														}
+													/>
+												}
+											/>
 											<Action
 												title="Delete Preset"
 												icon={Icon.Trash}

@@ -167,3 +167,42 @@ test("deletes only the selected preset and reports whether it existed", async ()
 	assert.equal(await store.delete(first.id), false);
 	assert.deepEqual(await store.list(), [second]);
 });
+
+test("updates a preset in place and preserves its identity", async () => {
+	const values = new Map<string, string>();
+	const store = new AudioPresetStore(
+		{
+			getItem: async (key) => values.get(key),
+			setItem: async (key, value) => {
+				values.set(key, value);
+			},
+		},
+		() => "preset-1",
+	);
+	const original = await store.save({ name: "Desk", profiles: [] });
+	const updated = await store.update(original.id, {
+		name: "Desk and Headset",
+		output: { name: "output.q30", description: "Q30" },
+		profiles: [{ cardName: "card.q30", profileName: "a2dp-sink" }],
+	});
+
+	assert.deepEqual(updated, {
+		id: original.id,
+		name: "Desk and Headset",
+		output: { name: "output.q30", description: "Q30" },
+		profiles: [{ cardName: "card.q30", profileName: "a2dp-sink" }],
+	});
+	assert.deepEqual(await store.list(), [updated]);
+});
+
+test("rejects updating a preset that no longer exists", async () => {
+	const store = new AudioPresetStore({
+		getItem: async () => "[]",
+		setItem: async () => {},
+	});
+
+	await assert.rejects(
+		store.update("missing", { name: "Desk", profiles: [] }),
+		{ message: "Preset was not found" },
+	);
+});

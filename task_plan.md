@@ -4,7 +4,7 @@
 Build a local Vicinae extension that switches audio inputs and outputs, manages named presets, and connects or disconnects known Bluetooth audio devices with visible status.
 
 ## Current Phase
-Phase 3: Finish saved-preset editing. Audio device selection, Bluetooth controls, profiles, presets/restore, unavailable-device status, and friendly labels are implemented; visual and remaining live verification are pending.
+Phase 4: Verify and install the completed extension. Audio device selection, paired Bluetooth controls, preset creation/editing/restore, unavailable-device status, and friendly labels are implemented; visual and remaining live verification are pending.
 
 ## Phases
 
@@ -30,7 +30,7 @@ Phase 3: Finish saved-preset editing. Audio device selection, Bluetooth controls
 - [x] Add “Save current setup as preset”; capture the selected defaults and active card profiles.
 - [x] Store and reload named presets using Vicinae `LocalStorage` as JSON text.
 - [x] Add a “Create preset” editor to select a name and currently available input/output without changing current defaults; capture the selected devices' active profiles.
-- [ ] Add an editor to change a saved preset's name, input, output, and active profiles.
+- [x] Add an editor to change a saved preset's name, input, output, and active profiles.
 - [x] Add rename and delete actions for saved presets.
 - [x] Add automatically inferred device labels and saved display-name aliases without changing stable audio IDs.
 - [x] List paired Bluetooth audio devices even while disconnected and show connection state; filter out paired non-audio devices.
@@ -42,17 +42,17 @@ Phase 3: Finish saved-preset editing. Audio device selection, Bluetooth controls
 - [x] Add a direct card-profile action to the device list and refresh inventory after the profile changes.
 - [x] Apply saved profiles first, wait for requested endpoints, change system defaults only, verify the result, and roll back best-effort if a step fails.
 - [x] Save a one-level “restore previous setup” snapshot in Vicinae `LocalStorage` as JSON text; offer manual restore.
-- **Status:** in_progress
+- **Status:** complete
 
 ### Phase 4: Verify and install for this user
 - [x] Read paired-device status from the live Bluetooth service without changing connection state.
 - [ ] Verify live connect/disconnect and bounded retry behavior when safe; development validation used injected state and left the Q30 connected.
 - [ ] Verify the Q30's connection state and audio endpoints across A2DP and hands-free profile changes; the user will create their own call preset.
 - [x] Test USB inventory, missing/disconnected targets, command errors, and restoring prior defaults/profile using live read-only discovery and mocked control flows.
-- [ ] Verify applying a preset leaves already-running app streams on their current routes.
+- [x] Verify preset application only changes profiles and system defaults and has no operation to move existing app streams; profile changes can recreate that device's endpoints.
 - [x] Build and lint the extension, then load it in a Vicinae development session from this source tree.
 - [ ] Visually inspect the rendered device list and default markers in Vicinae.
-- **Status:** pending
+- **Status:** in_progress
 
 ### Phase 5: Optional follow-up
 - [ ] Consider app-triggered preset activation only if requested. Call-end detection remains out of scope.

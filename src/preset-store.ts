@@ -103,6 +103,20 @@ export class AudioPresetStore {
 		return renamed;
 	}
 
+	async update(id: string, draft: AudioPresetDraft): Promise<AudioPreset> {
+		const name = draft.name.trim();
+		if (!name) throw new Error("Preset name is required");
+
+		const presets = await this.list();
+		const index = presets.findIndex((preset) => preset.id === id);
+		if (index < 0) throw new Error("Preset was not found");
+
+		const updated: AudioPreset = { ...draft, name, id };
+		presets[index] = updated;
+		await this.storage.setItem(STORAGE_KEY, JSON.stringify(presets));
+		return updated;
+	}
+
 	async delete(id: string): Promise<boolean> {
 		const presets = await this.list();
 		const remaining = presets.filter((preset) => preset.id !== id);

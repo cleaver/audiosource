@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { AudioInventory } from "../src/audio-inventory";
-import { createPresetFromSelection } from "../src/preset-model";
+import {
+	createPresetFromSelection,
+	updatePresetFromSelection,
+} from "../src/preset-model";
 
 const inventory: AudioInventory = {
 	outputs: [
@@ -92,5 +95,90 @@ test("rejects a selected endpoint that disappeared before the preset was saved",
 				inventory,
 			),
 		/Selected output is no longer available/,
+	);
+});
+
+test("edits selected devices and profiles while preserving unchanged unavailable targets", () => {
+	const existing = {
+		id: "preset-1",
+		name: "Old preset",
+		output: {
+			name: "output.old",
+			description: "Old output",
+			deviceName: "card.old",
+		},
+		input: {
+			name: "input.usb",
+			description: "USB Headset Mic",
+			deviceName: "card.usb",
+		},
+		profiles: [
+			{ cardName: "card.old", profileName: "old-profile" },
+			{ cardName: "card.usb", profileName: "duplex" },
+		],
+	};
+
+	assert.deepEqual(
+		updatePresetFromSelection(
+			existing,
+			"  Updated preset  ",
+			"output.hdmi",
+			"input.usb",
+			inventory,
+		),
+		{
+			name: "Updated preset",
+			output: {
+				name: "output.hdmi",
+				description: "HDMI Monitor",
+				deviceName: "card.hdmi",
+			},
+			input: existing.input,
+			profiles: [
+				{ cardName: "card.hdmi", profileName: "output:hdmi-stereo" },
+				{ cardName: "card.usb", profileName: "duplex" },
+			],
+		},
+	);
+
+	assert.deepEqual(
+		updatePresetFromSelection(
+			existing,
+			"Renamed",
+			"output.old",
+			"input.usb",
+			inventory,
+		),
+		{
+			name: "Renamed",
+			output: existing.output,
+			input: existing.input,
+			profiles: existing.profiles,
+		},
+	);
+});
+
+test("rejects incompatible saved profiles for two selected endpoints on one card", () => {
+	const existing = {
+		id: "preset-1",
+		name: "Calls",
+		input: {
+			name: "input.usb",
+			description: "USB Headset Mic",
+			deviceName: "card.usb",
+		},
+		profiles: [{ cardName: "card.usb", profileName: "handsfree" }],
+	};
+
+	assert.throws(
+		() =>
+			updatePresetFromSelection(
+				existing,
+				"Calls",
+				"output.usb",
+				"input.usb",
+				inventory,
+			),
+		/Selected preset devices require incompatible profiles for card.usb/,
 	);
 });

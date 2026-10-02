@@ -121,8 +121,8 @@
   - Kept profile switching and endpoint discovery in scope so the user can make presets themselves.
   - Added live Bluetooth/preset verification tasks to Phase 4.
 - Next slices:
-  1. Add editing for an existing preset.
-  2. Complete visual inspection and the remaining live checks when they can be done without disrupting audio.
+  1. Complete visual inspection if a Vicinae app surface becomes available.
+  2. Run live Bluetooth/profile checks when they will not interrupt active audio.
 
 ### Phase 3: Preset management actions
 - **Status:** complete
@@ -146,9 +146,18 @@
   - `src/bluetooth-devices.ts`, `src/audio-devices.tsx`
   - `tests/bluetooth-devices.test.ts`
 
+### Phase 3: Edit an existing preset
+- **Status:** complete
+- Actions taken:
+  - Added an edit form for a saved preset's name, input, and output; unchanged targets retain their stored stable names and profiles, including disconnected targets.
+  - Newly selected endpoints capture their card's active profile. The editor rejects combinations that require two different profiles on the same card.
+  - Added storage update behavior that changes the preset in place and keeps its ID.
+  - TDD: added in-place update, missing-ID, preserved unavailable target/profile, changed target, and incompatible profile tests; observed RED before implementing, then GREEN.
+  - Rebuilt the installed user extension successfully.
+
 ### Next slice
 - **Status:** pending
-- Add saved-preset editing, inspect the rendered Vicinae list, then complete remaining safe live checks. Do not toggle the connected Q30 or change its profile during verification without explicit user direction.
+- Inspect the rendered Vicinae list and complete remaining safe live checks. Do not toggle the connected Q30 or change its profile during verification without explicit user direction.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -169,7 +178,9 @@
 | Paired Bluetooth audio discovery | Fake paired devices and BlueZ `info` output | Shows audio-capable paired devices and current connection state; filters out trackpad/controller | Pass; live scan shows connected Q30 and excludes paired non-audio devices | ✓ |
 | Bluetooth connection retry | Fake `bluetoothctl` commands and changing state | Verify after each attempt, try no more than twice, accept success after an in-progress error | Pass; first failed RED before adapter implementation | ✓ |
 | Bluetooth disconnect | Fake `bluetoothctl` and reported status | Disconnect once and confirm disconnected state | Pass | ✓ |
-| Full suite after Bluetooth and preset actions | `npm test` | All behavior tests pass | 34 passed | ✓ |
+| Preset editing | Mocked inventory/store | Update a preset in place, preserve unchanged targets/profiles, and reject profile conflicts | Pass; first failed RED before model/store implementation | ✓ |
+| Preset stream routing | Injected preset execution | Apply profiles and defaults without invoking per-stream move operations | Exact event list contains only profile and default updates | ✓ |
+| Full suite after Bluetooth and preset actions | `npm test` | All behavior tests pass | 38 passed | ✓ |
 | Live read-only Bluetooth scan | Production BlueZ adapter | Shows paired audio devices and reports their connection status | Only the Q30 listed; it is connected | ✓ |
 | Defaults unchanged by Bluetooth discovery | Read system defaults before and after paired-device scan | Discovery only reads BlueZ state | Same sink and source before and after scan | ✓ |
 | Profile switching | Delayed fake card-profile update | Wait for selected profile, then return refreshed input/output inventory | Pass; first failed RED because profile helper was missing | ✓ |
@@ -191,12 +202,13 @@
 | 2026-10-02 | Second behavior test imported the wrong module | 1 | Corrected the import to use the audio inventory interface. |
 | 2026-10-02 | Plan patch context changed during an earlier hunk | 1 | Reapplied the phase update separately. |
 | 2026-10-02 | First preset save failed because a missing Vicinae storage key returned `null` | Reproduced twice in a focused store test | Treat null, undefined, and empty-string values as empty storage. |
+| 2026-10-02 | CUA had no app or browser surface for the planned visual check | `getState()` returned empty app/browser lists; its `getApp`/`listApps` methods were unavailable | Keep visual inspection pending; the extension build and typecheck pass. |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Device inventory, default selection, direct profile switching, presets/restore, rename/delete, Bluetooth status/connect/disconnect, unavailable-device indicators, and friendly aliases are implemented. |
-| Where am I going? | Add saved-preset editing, then finish safe live and visual verification. |
+| Where am I? | Device inventory, default selection, direct profile switching, preset create/edit/rename/delete/restore, Bluetooth status/connect/disconnect, unavailable-device indicators, and friendly aliases are implemented. |
+| Where am I going? | Finish safe live and visual verification. |
 | What's the goal? | Build a Vicinae extension for audio switching, user-defined presets, and known Bluetooth device management. |
 | What have I learned? | See `findings.md`. |
-| What have I done? | Completed red-green inventory, selection, preset creation/application/restore, availability, friendly-label, preset rename/delete, and paired Bluetooth control slices; extension builds and is registered in Vicinae development mode. |
+| What have I done? | Completed red-green inventory, selection, preset create/edit/apply/restore, availability, friendly-label, and paired Bluetooth-control slices; extension builds and is registered in Vicinae development mode. |

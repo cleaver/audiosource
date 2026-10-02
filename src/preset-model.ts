@@ -75,6 +75,77 @@ export function createPresetFromSelection(
 	};
 }
 
+export function updatePresetFromSelection(
+	existing: AudioPresetDraft & { id: string },
+	name: string,
+	outputName: string | undefined,
+	inputName: string | undefined,
+	inventory: AudioInventory,
+): AudioPresetDraft {
+	const presetName = name.trim();
+	if (!presetName) throw new Error("Preset name is required");
+
+	const selectEndpoint = (
+		kind: "output" | "input",
+		selectedName: string | undefined,
+		original: PresetEndpoint | undefined,
+	) => {
+		if (!selectedName) return undefined;
+		if (original?.name === selectedName) {
+			return { endpoint: original, unchanged: true };
+		}
+
+		const endpoint = inventory[kind === "output" ? "outputs" : "inputs"].find(
+			(candidate) => candidate.name === selectedName,
+		);
+		if (!endpoint) {
+			throw new Error(`Selected ${kind} is no longer available`);
+		}
+		return { endpoint: presetEndpoint(endpoint)!, unchanged: false };
+	};
+
+	const output = selectEndpoint("output", outputName, existing.output);
+	const input = selectEndpoint("input", inputName, existing.input);
+	if (!output && !input) throw new Error("Choose at least one input or output");
+
+	const profilesByCard = new Map<string, PresetProfile>();
+	const recordProfile = (profile: PresetProfile) => {
+		const previous = profilesByCard.get(profile.cardName);
+		if (previous && previous.profileName !== profile.profileName) {
+			throw new Error(
+				`Selected preset devices require incompatible profiles for ${profile.cardName}`,
+			);
+		}
+		profilesByCard.set(profile.cardName, profile);
+	};
+
+	for (const selection of [output, input]) {
+		const endpoint = selection?.endpoint;
+		if (!selection || !endpoint?.deviceName) continue;
+		const cardName = endpoint.deviceName;
+		if (selection.unchanged) {
+			for (const profile of existing.profiles.filter(
+				(candidate) => candidate.cardName === cardName,
+			)) {
+				recordProfile(profile);
+			}
+		} else {
+			const activeProfile = inventory.cards.find(
+				(card) => card.name === cardName,
+			)?.activeProfile;
+			if (activeProfile)
+				recordProfile({ cardName, profileName: activeProfile });
+		}
+	}
+
+	return {
+		name: presetName,
+		...(output ? { output: output.endpoint } : {}),
+		...(input ? { input: input.endpoint } : {}),
+		profiles: [...profilesByCard.values()],
+	};
+}
+
 export function captureCurrentSetup(
 	name: string,
 	inventory: AudioInventory,
