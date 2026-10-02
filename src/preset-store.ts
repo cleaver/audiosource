@@ -89,6 +89,29 @@ export class AudioPresetStore {
 		return preset;
 	}
 
+	async rename(id: string, name: string): Promise<AudioPreset> {
+		const normalizedName = name.trim();
+		if (!normalizedName) throw new Error("Preset name is required");
+
+		const presets = await this.list();
+		const index = presets.findIndex((preset) => preset.id === id);
+		if (index < 0) throw new Error("Preset was not found");
+
+		const renamed = { ...presets[index], name: normalizedName };
+		presets[index] = renamed;
+		await this.storage.setItem(STORAGE_KEY, JSON.stringify(presets));
+		return renamed;
+	}
+
+	async delete(id: string): Promise<boolean> {
+		const presets = await this.list();
+		const remaining = presets.filter((preset) => preset.id !== id);
+		if (remaining.length === presets.length) return false;
+
+		await this.storage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+		return true;
+	}
+
 	async getRestoreSnapshot(): Promise<AudioPresetDraft | undefined> {
 		const serialized = await this.storage.getItem(RESTORE_STORAGE_KEY);
 		if (serialized == null || serialized.length === 0) return undefined;

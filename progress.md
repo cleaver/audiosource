@@ -121,14 +121,34 @@
   - Kept profile switching and endpoint discovery in scope so the user can make presets themselves.
   - Added live Bluetooth/preset verification tasks to Phase 4.
 - Next slices:
-  1. Rename/delete saved presets.
-  2. Discover paired Bluetooth devices and report connection status.
-  3. Add connect/disconnect controls and reliable bounded connection attempts.
-  4. Complete non-disruptive live checks and visual inspection.
+  1. Add editing for an existing preset.
+  2. Complete visual inspection and the remaining live checks when they can be done without disrupting audio.
+
+### Phase 3: Preset management actions
+- **Status:** complete
+- Actions taken:
+  - Added rename and confirmed delete actions to each saved preset, including unavailable presets.
+  - The store preserves endpoints and profiles when renaming; deleting only removes the selected preset.
+  - TDD: added rename validation, missing-ID, stable-data, and delete-isolation cases; observed RED before adding the store methods, then GREEN.
+  - Built the Vicinae form and confirmation dialog actions successfully.
+
+### Phase 3: Paired Bluetooth audio controls
+- **Status:** complete
+- Actions taken:
+  - Added paired-device discovery through `bluetoothctl`, showing a device's BlueZ alias and live connected/disconnected status.
+  - Filtered non-audio devices using BlueZ audio icons and remote audio sink/headset/hands-free roles. This excludes the Magic Trackpad and a paired computer/controller-like device that advertises unrelated generic audio roles.
+  - Added connect/disconnect row actions, explicit status refresh, per-command timeouts, one bounded retry after an observed disconnected state, and connection-state verification.
+  - A verified connected state counts as success even if `bluetoothctl` reports an in-progress error. Disconnect also verifies final state.
+  - Successful connection refreshes PipeWire endpoints, but does not select a profile or change system defaults.
+  - TDD: wrote discovery, filter, retry, already-connected, command-error, invalid-address, and disconnect-verification tests; observed RED before implementing the adapter, then GREEN.
+  - Live read-only scan showed only the Q30 among paired audio devices and confirmed it is connected. Current default sink/source remained unchanged. No live connect/disconnect operation was run.
+- Files modified:
+  - `src/bluetooth-devices.ts`, `src/audio-devices.tsx`
+  - `tests/bluetooth-devices.test.ts`
 
 ### Next slice
 - **Status:** pending
-- Implement preset rename/delete and Bluetooth controls, then perform the remaining live and visual verification.
+- Add saved-preset editing, inspect the rendered Vicinae list, then complete remaining safe live checks. Do not toggle the connected Q30 or change its profile during verification without explicit user direction.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -145,6 +165,13 @@
 | Apply rollback | Target endpoints remain absent after profile change | Roll back to prior profile/defaults and clear snapshot | Pass | ✓ |
 | Restore snapshot persistence | In-memory storage and a new store instance | Snapshot survives reload and clears after manual restore | Pass | ✓ |
 | Missing Vicinae storage key | Storage returns null for an empty key | First preset save works; restore key reads as absent | Reproduced original null.length failure, then passes after null-safe handling | ✓ |
+| Rename and delete presets | In-memory storage with multiple saved entries | Rename only updates name; delete removes only the requested ID; blank/missing names fail clearly | Pass; first failed RED before store methods were implemented | ✓ |
+| Paired Bluetooth audio discovery | Fake paired devices and BlueZ `info` output | Shows audio-capable paired devices and current connection state; filters out trackpad/controller | Pass; live scan shows connected Q30 and excludes paired non-audio devices | ✓ |
+| Bluetooth connection retry | Fake `bluetoothctl` commands and changing state | Verify after each attempt, try no more than twice, accept success after an in-progress error | Pass; first failed RED before adapter implementation | ✓ |
+| Bluetooth disconnect | Fake `bluetoothctl` and reported status | Disconnect once and confirm disconnected state | Pass | ✓ |
+| Full suite after Bluetooth and preset actions | `npm test` | All behavior tests pass | 34 passed | ✓ |
+| Live read-only Bluetooth scan | Production BlueZ adapter | Shows paired audio devices and reports their connection status | Only the Q30 listed; it is connected | ✓ |
+| Defaults unchanged by Bluetooth discovery | Read system defaults before and after paired-device scan | Discovery only reads BlueZ state | Same sink and source before and after scan | ✓ |
 | Profile switching | Delayed fake card-profile update | Wait for selected profile, then return refreshed input/output inventory | Pass; first failed RED because profile helper was missing | ✓ |
 | Preset availability | Connected Q30 in A2DP, then disconnected Q30 | Treat HFP endpoints as reachable while HFP profile is available; otherwise mark unavailable | Pass; first failed RED because availability check was missing | ✓ |
 | Extension build/typecheck | `npm run build` | Typechecks and bundles the command | Pass | ✓ |
@@ -168,8 +195,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Device inventory, default selection, direct profile switching, presets/restore, unavailable-device indicators, and friendly aliases are implemented. |
-| Where am I going? | Add preset rename/delete and paired Bluetooth status/connect/disconnect, then finish safe live and visual verification. |
+| Where am I? | Device inventory, default selection, direct profile switching, presets/restore, rename/delete, Bluetooth status/connect/disconnect, unavailable-device indicators, and friendly aliases are implemented. |
+| Where am I going? | Add saved-preset editing, then finish safe live and visual verification. |
 | What's the goal? | Build a Vicinae extension for audio switching, user-defined presets, and known Bluetooth device management. |
 | What have I learned? | See `findings.md`. |
-| What have I done? | Completed red-green inventory, selection, preset creation/application/restore, availability, and friendly-label slices; extension builds and is registered in Vicinae development mode. |
+| What have I done? | Completed red-green inventory, selection, preset creation/application/restore, availability, friendly-label, preset rename/delete, and paired Bluetooth control slices; extension builds and is registered in Vicinae development mode. |

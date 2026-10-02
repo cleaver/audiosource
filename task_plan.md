@@ -4,7 +4,7 @@
 Build a local Vicinae extension that switches audio inputs and outputs, manages named presets, and connects or disconnects known Bluetooth audio devices with visible status.
 
 ## Current Phase
-Phase 3: Finish preset management and add known Bluetooth device controls. Device discovery, profiles, presets, restore, unavailable-device status, and friendly labels are implemented; preset editing, Bluetooth controls, and live verification remain.
+Phase 3: Finish saved-preset editing. Audio device selection, Bluetooth controls, profiles, presets/restore, unavailable-device status, and friendly labels are implemented; visual and remaining live verification are pending.
 
 ## Phases
 
@@ -30,11 +30,12 @@ Phase 3: Finish preset management and add known Bluetooth device controls. Devic
 - [x] Add “Save current setup as preset”; capture the selected defaults and active card profiles.
 - [x] Store and reload named presets using Vicinae `LocalStorage` as JSON text.
 - [x] Add a “Create preset” editor to select a name and currently available input/output without changing current defaults; capture the selected devices' active profiles.
-- [ ] Add rename and delete actions for saved presets.
+- [ ] Add an editor to change a saved preset's name, input, output, and active profiles.
+- [x] Add rename and delete actions for saved presets.
 - [x] Add automatically inferred device labels and saved display-name aliases without changing stable audio IDs.
-- [ ] List paired Bluetooth audio devices even while disconnected and show connection state.
-- [ ] Add connect/disconnect actions for known Bluetooth devices.
-- [ ] Make Bluetooth connection reliable with bounded retries and state verification; report the final result clearly.
+- [x] List paired Bluetooth audio devices even while disconnected and show connection state; filter out paired non-audio devices.
+- [x] Add connect/disconnect actions for known Bluetooth devices.
+- [x] Make Bluetooth connection reliable with two bounded attempts and state verification; report the final result clearly.
 - [x] Refresh device choices whenever the command opens.
 - [x] Keep saved presets when devices are disconnected.
 - [x] Mark disconnected preset targets unavailable until they reconnect; still allow endpoints hidden by an available inactive profile.
@@ -44,9 +45,10 @@ Phase 3: Finish preset management and add known Bluetooth device controls. Devic
 - **Status:** in_progress
 
 ### Phase 4: Verify and install for this user
-- [ ] Verify paired-device status and bounded connect retries against the live Bluetooth service when safe to do so.
+- [x] Read paired-device status from the live Bluetooth service without changing connection state.
+- [ ] Verify live connect/disconnect and bounded retry behavior when safe; development validation used injected state and left the Q30 connected.
 - [ ] Verify the Q30's connection state and audio endpoints across A2DP and hands-free profile changes; the user will create their own call preset.
-- [ ] Check ordinary USB devices, a missing/disconnected device, command errors, and restoring prior defaults/profile.
+- [x] Test USB inventory, missing/disconnected targets, command errors, and restoring prior defaults/profile using live read-only discovery and mocked control flows.
 - [ ] Verify applying a preset leaves already-running app streams on their current routes.
 - [x] Build and lint the extension, then load it in a Vicinae development session from this source tree.
 - [ ] Visually inspect the rendered device list and default markers in Vicinae.

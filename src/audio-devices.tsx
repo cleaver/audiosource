@@ -1,6 +1,8 @@
 import {
 	Action,
 	ActionPanel,
+	Alert,
+	confirmAlert,
 	Icon,
 	List,
 	LocalStorage,
@@ -17,6 +19,12 @@ import {
 	setDefaultEndpoint,
 	type AudioInventory,
 } from "./audio-inventory";
+import {
+	connectBluetoothAudioDevice,
+	disconnectBluetoothAudioDevice,
+	readBluetoothAudioDevices,
+	type BluetoothAudioDevice,
+} from "./bluetooth-devices";
 import { CreatePresetForm } from "./create-preset-form";
 import {
 	applyAudioPreset,
@@ -24,6 +32,7 @@ import {
 	type PresetExecution,
 } from "./preset-actions";
 import { SavePresetForm } from "./save-preset-form";
+import { RenamePresetForm } from "./rename-preset-form";
 import { AudioPresetStore, type AudioPreset } from "./preset-store";
 import { getPresetAvailability, type AudioPresetDraft } from "./preset-model";
 import {
@@ -55,11 +64,58 @@ export default function AudioDevices() {
 	const [inventory, setInventory] = useState<AudioInventory | null>(null);
 	const [presets, setPresets] = useState<AudioPreset[]>([]);
 	const [deviceAliases, setDeviceAliases] = useState<DeviceAliases>({});
+	const [bluetoothDevices, setBluetoothDevices] = useState<
+		BluetoothAudioDevice[] | null
+	>(null);
+	const [bluetoothError, setBluetoothError] = useState<string | null>(null);
+	const [bluetoothPending, setBluetoothPending] = useState<string | null>(null);
 	const [restoreSnapshot, setRestoreSnapshot] =
 		useState<AudioPresetDraft | null>(null);
 	const [presetError, setPresetError] = useState<string | null>(null);
 	const [deviceAliasError, setDeviceAliasError] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+
+	const refreshBluetoothDevices = async () => {
+		try {
+			setBluetoothDevices(await readBluetoothAudioDevices());
+			setBluetoothError(null);
+		} catch (reason) {
+			setBluetoothError(
+				reason instanceof Error ? reason.message : String(reason),
+			);
+		}
+	};
+
+	const toggleBluetoothDevice = async (device: BluetoothAudioDevice) => {
+		if (bluetoothPending === device.address) return;
+		setBluetoothPending(device.address);
+		try {
+			const updated = device.connected
+				? await disconnectBluetoothAudioDevice(device.address)
+				: await connectBluetoothAudioDevice(device.address);
+			setBluetoothDevices(
+				(current) =>
+					current?.map((item) =>
+						item.address === updated.address ? updated : item,
+					) ?? [updated],
+			);
+			const updatedInventory = await readAudioInventory().catch(() => null);
+			if (updatedInventory) setInventory(updatedInventory);
+			await showToast({
+				style: Toast.Style.Success,
+				title: `${updated.connected ? "Connected" : "Disconnected"} ${updated.name}`,
+			});
+		} catch (reason) {
+			await refreshBluetoothDevices();
+			await showToast({
+				style: Toast.Style.Failure,
+				title: `Could not ${device.connected ? "disconnect" : "connect"} ${device.name}`,
+				message: reason instanceof Error ? reason.message : String(reason),
+			});
+		} finally {
+			setBluetoothPending(null);
+		}
+	};
 
 	const applyDefault = async (
 		kind: "input" | "output",
@@ -130,6 +186,7 @@ export default function AudioDevices() {
 				}
 			},
 		);
+		refreshBluetoothDevices();
 
 		return () => {
 			isCurrent = false;
@@ -213,6 +270,34 @@ export default function AudioDevices() {
 			await showToast({
 				style: Toast.Style.Failure,
 				title: "Could not restore previous setup",
+				message: reason instanceof Error ? reason.message : String(reason),
+			});
+		}
+	};
+
+	const deletePreset = async (preset: AudioPreset) => {
+		const confirmed = await confirmAlert({
+			title: `Delete “${preset.name}”?`,
+			message: "This saved preset will be removed.",
+			primaryAction: {
+				title: "Delete Preset",
+				style: Alert.ActionStyle.Destructive,
+			},
+		});
+		if (!confirmed) return;
+
+		try {
+			const deleted = await presetStore.delete(preset.id);
+			if (!deleted) throw new Error("Preset was not found");
+			setPresets((current) => current.filter((item) => item.id !== preset.id));
+			await showToast({
+				style: Toast.Style.Success,
+				title: `Deleted “${preset.name}”`,
+			});
+		} catch (reason) {
+			await showToast({
+				style: Toast.Style.Failure,
+				title: `Could not delete “${preset.name}”`,
 				message: reason instanceof Error ? reason.message : String(reason),
 			});
 		}
@@ -333,19 +418,128 @@ export default function AudioDevices() {
 									subtitle={details.join(" · ")}
 									icon={availability.available ? Icon.Bookmark : Icon.Warning}
 									actions={
-										availability.available ? (
-											<ActionPanel>
+										<ActionPanel>
+											{availability.available && (
 												<Action
 													title="Apply Preset"
 													icon={Icon.Checkmark}
 													onAction={() => applyPreset(preset)}
 												/>
-											</ActionPanel>
-										) : undefined
+											)}
+											<Action.Push
+												title="Rename Preset"
+												icon={Icon.Pencil}
+												target={
+													<RenamePresetForm
+														preset={preset}
+														rename={(name) =>
+															presetStore.rename(preset.id, name)
+														}
+														onRenamed={(updated) =>
+															setPresets((current) =>
+																current.map((item) =>
+																	item.id === updated.id ? updated : item,
+																),
+															)
+														}
+													/>
+												}
+											/>
+											<Action
+												title="Delete Preset"
+												icon={Icon.Trash}
+												style="destructive"
+												onAction={() => deletePreset(preset)}
+											/>
+										</ActionPanel>
 									}
 								/>
 							);
 						})}
+					</List.Section>
+					<List.Section
+						title="Bluetooth Devices"
+						subtitle="Connect or disconnect paired audio devices; system defaults stay unchanged"
+					>
+						<List.Item
+							title="Refresh Bluetooth Status"
+							subtitle="Read the current connection state again"
+							icon={Icon.ArrowClockwise}
+							actions={
+								<ActionPanel>
+									<Action
+										title="Refresh Bluetooth Status"
+										icon={Icon.ArrowClockwise}
+										onAction={refreshBluetoothDevices}
+									/>
+								</ActionPanel>
+							}
+						/>
+						{bluetoothError && (
+							<List.Item
+								title="Could not load Bluetooth devices"
+								subtitle={bluetoothError}
+								icon={Icon.Warning}
+								actions={
+									<ActionPanel>
+										<Action
+											title="Retry Bluetooth Device Scan"
+											icon={Icon.ArrowClockwise}
+											onAction={refreshBluetoothDevices}
+										/>
+									</ActionPanel>
+								}
+							/>
+						)}
+						{bluetoothDevices === null && !bluetoothError && (
+							<List.Item
+								title="Loading paired Bluetooth audio devices…"
+								icon={Icon.Bluetooth}
+							/>
+						)}
+						{bluetoothDevices?.map((device) => {
+							const isPending = bluetoothPending === device.address;
+							return (
+								<List.Item
+									key={device.address}
+									title={device.name}
+									subtitle={device.address}
+									icon={Icon.Bluetooth}
+									accessories={[
+										{
+											text: isPending
+												? device.connected
+													? "Disconnecting…"
+													: "Connecting…"
+												: device.connected
+													? "Connected"
+													: "Disconnected",
+										},
+									]}
+									actions={
+										<ActionPanel>
+											<Action
+												title={
+													isPending
+														? "Please Wait"
+														: device.connected
+															? "Disconnect Device"
+															: "Connect Device"
+												}
+												icon={Icon.Bluetooth}
+												onAction={() => toggleBluetoothDevice(device)}
+											/>
+										</ActionPanel>
+									}
+								/>
+							);
+						})}
+						{bluetoothDevices?.length === 0 && !bluetoothError && (
+							<List.Item
+								title="No paired Bluetooth audio devices"
+								icon={Icon.Bluetooth}
+							/>
+						)}
 					</List.Section>
 					<List.Section title="Outputs">
 						{inventory.outputs.map((device) => {

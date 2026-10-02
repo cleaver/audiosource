@@ -97,3 +97,73 @@ test("saves the first preset when Vicinae returns null for an empty key", async 
 
 	assert.equal((await store.list())[0]?.name, "Calls");
 });
+
+test("renames a preset without changing its selected devices or profiles", async () => {
+	const values = new Map<string, string>();
+	const store = new AudioPresetStore(
+		{
+			getItem: async (key) => values.get(key),
+			setItem: async (key, value) => {
+				values.set(key, value);
+			},
+		},
+		() => "preset-1",
+	);
+	const saved = await store.save({
+		name: "Calls",
+		output: { name: "output.q30", description: "Q30 Handsfree" },
+		input: { name: "input.q30", description: "Q30 Microphone" },
+		profiles: [{ cardName: "card.q30", profileName: "headset-head-unit" }],
+	});
+
+	const renamed = await store.rename(saved.id, "  Video Calls  ");
+
+	assert.deepEqual(renamed, { ...saved, name: "Video Calls" });
+	assert.deepEqual(await store.list(), [renamed]);
+});
+
+test("requires a non-empty name when renaming a preset", async () => {
+	const store = new AudioPresetStore({
+		getItem: async () =>
+			JSON.stringify([{ id: "preset-1", name: "Calls", profiles: [] }]),
+		setItem: async () => {},
+	});
+
+	await assert.rejects(store.rename("preset-1", "  "), {
+		message: "Preset name is required",
+	});
+});
+
+test("reports a missing preset when renaming", async () => {
+	const store = new AudioPresetStore({
+		getItem: async () => "[]",
+		setItem: async () => {},
+	});
+
+	await assert.rejects(store.rename("missing", "Calls"), {
+		message: "Preset was not found",
+	});
+});
+
+test("deletes only the selected preset and reports whether it existed", async () => {
+	const values = new Map<string, string>();
+	const store = new AudioPresetStore(
+		{
+			getItem: async (key) => values.get(key),
+			setItem: async (key, value) => {
+				values.set(key, value);
+			},
+		},
+		(() => {
+			let next = 0;
+			return () => `preset-${++next}`;
+		})(),
+	);
+	const first = await store.save({ name: "Calls", profiles: [] });
+	const second = await store.save({ name: "Desk", profiles: [] });
+
+	assert.equal(await store.delete(first.id), true);
+	assert.deepEqual(await store.list(), [second]);
+	assert.equal(await store.delete(first.id), false);
+	assert.deepEqual(await store.list(), [second]);
+});

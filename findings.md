@@ -18,6 +18,10 @@
 - `wpctl`/`pactl` numeric object IDs are session-specific. Store stable card/node names or identifying properties and re-query after transitions.
 - `pactl --format=json list cards` returns each card's active profile and available profiles. Sink/source JSON exposes a stable node `name` and `properties.device.name`; monitor sources are marked with `properties.device.class = "monitor"` and should not be offered as microphones.
 - The device-label slice now reads card and endpoint metadata such as bus, product name, node nickname, and active port; common built-in, HDMI, USB, and Bluetooth devices receive short labels, while unknown devices retain their descriptions.
+- Read-only BlueZ CLI inspection shows `bluetoothctl devices Paired` lists the Q30, a Magic Trackpad, and a gamepad even when only some are audio devices. `bluetoothctl info <address>` reports device alias, paired/trusted flags, and `Connected: yes/no`; the Q30 is currently paired, trusted, and connected. No Bluetooth state was changed during inspection.
+- The Bluetooth UI filters by audio-specific BlueZ icons or usable remote roles (`Audio Sink`, `Headset`, or `Handsfree`). Generic A2DP/audio-source and hands-free-gateway UUIDs can belong to phones or controllers and do not alone make a paired device an output/input headset.
+- A live, read-only scan confirmed the filter shows the Q30 as connected while excluding the Magic Trackpad and `c134v3r p4d (2)`; the latter advertises generic audio-source/remote-control roles but has BlueZ icon `computer` and no headset/sink role. The system's current default sink/source were unchanged by discovery.
+- Official BlueZ CLI docs support `devices Paired`, `connect <address>`, and `disconnect <address>`. BlueZ's `Device1.Connected` property is the authoritative connection state; `Connect()` can return `InProgress`/`AlreadyConnected`, and reports success if at least one eligible profile connects. A bounded retry must check actual state before repeating. `Disconnect()` drops connected profiles and the link but does not remove pairing. Sources: https://github.com/bluez/bluez/blob/master/doc/bluetoothctl.rst and https://github.com/bluez/bluez/blob/master/doc/org.bluez.Device.rst.
 - Installed versions: Vicinae v0.23.2, Node v24.21.0, npm v11.13.0. The `vici` executable is not global; extension scripts should invoke the project-local SDK CLI.
 
 ## Vicinae Findings
@@ -36,6 +40,7 @@
 | Offer rollback and an explicit restore action | A partial profile/device switch should not leave audio silently misconfigured. |
 | Do not move active streams or detect call end | User wants defaults-only switching and will restore manually. |
 | Support both saving the current setup and selecting live devices in a preset editor | Lets the user define presets for hardware as it is added, without requiring hand-edited config. |
+| Verify Bluetooth connection actions against the reported connection state and cap connect attempts at two | Handles already-connected and in-progress outcomes, allows one retry when the first attempt does not connect, and prevents indefinite retries. |
 
 ## Research Findings
 - WirePlumber documents `wpctl set-default` and its use of node IDs; it also documents Bluetooth HFP and A2DP roles and automatic headset profile switching.
