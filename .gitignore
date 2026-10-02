@@ -1,0 +1,4 @@
+node_modules/
+dist/
+build/
+vicinae-env.d.ts

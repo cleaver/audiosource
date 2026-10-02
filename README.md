@@ -1,0 +1,22 @@
+# Audio Switcher
+
+A local Vicinae extension for selecting audio inputs and outputs and managing audio presets.
+
+## Using it
+
+- Open **Audio Devices** to see connected inputs, outputs, profiles, and defaults.
+- Set an input or output directly, or use **Create Preset** to choose connected endpoints without changing the current defaults.
+- Use **Save Current Setup as Preset** to capture the current input, output, and their active profiles.
+- Select a saved preset and choose **Apply Preset**. The extension activates saved profiles first, waits for their endpoints, then changes system defaults. Existing app streams stay on their current routes.
+- Choose **Restore Previous Setup** to manually return to the defaults and profiles from just before the most recent preset application.
+
+New devices appear when **Audio Devices** is opened again. To save a profile whose endpoints are currently hidden (such as a Bluetooth hands-free profile), activate that profile in the system audio settings first, reopen the command, then create or save the preset. Applying the saved preset can activate that profile itself.
+
+## Development
+
+```sh
+npm install
+npm test
+npm run build
+npm run dev
+```
