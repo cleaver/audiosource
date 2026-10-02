@@ -12,6 +12,8 @@ A local Vicinae extension for selecting audio inputs and outputs and managing au
 
 New devices appear when **Audio Devices** is opened again. To save a profile whose endpoints are currently hidden (such as Bluetooth hands-free), open that device's profile picker and activate the profile first. The device list refreshes, so you can then create or save a preset with its new endpoints. Applying the saved preset can activate that profile itself.
 
+Saved presets remain in Vicinae storage when a device disconnects. The preset is marked unavailable until the device and required profile return.
+
 ## Development
 
 ```sh

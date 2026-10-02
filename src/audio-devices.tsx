@@ -23,7 +23,7 @@ import {
 } from "./preset-actions";
 import { SavePresetForm } from "./save-preset-form";
 import { AudioPresetStore, type AudioPreset } from "./preset-store";
-import type { AudioPresetDraft } from "./preset-model";
+import { getPresetAvailability, type AudioPresetDraft } from "./preset-model";
 
 const presetStore = new AudioPresetStore({
 	getItem: (key) => LocalStorage.getItem<string>(key),
@@ -241,7 +241,10 @@ export default function AudioDevices() {
 							/>
 						)}
 						{presets.map((preset) => {
+							const availability = getPresetAvailability(preset, inventory);
 							const details = [
+								!availability.available &&
+									`Unavailable: ${availability.unavailableTargets.join(", ")}`,
 								preset.output && `Output: ${preset.output.description}`,
 								preset.input && `Input: ${preset.input.description}`,
 								...preset.profiles.map((profile) => profile.profileName),
@@ -251,15 +254,17 @@ export default function AudioDevices() {
 									key={preset.id}
 									title={preset.name}
 									subtitle={details.join(" · ")}
-									icon={Icon.Bookmark}
+									icon={availability.available ? Icon.Bookmark : Icon.Warning}
 									actions={
-										<ActionPanel>
-											<Action
-												title="Apply Preset"
-												icon={Icon.Checkmark}
-												onAction={() => applyPreset(preset)}
-											/>
-										</ActionPanel>
+										availability.available ? (
+											<ActionPanel>
+												<Action
+													title="Apply Preset"
+													icon={Icon.Checkmark}
+													onAction={() => applyPreset(preset)}
+												/>
+											</ActionPanel>
+										) : undefined
 									}
 								/>
 							);

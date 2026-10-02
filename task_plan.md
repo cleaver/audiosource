@@ -4,7 +4,7 @@
 Draft an implementation plan for a local Vicinae extension that switches audio inputs and outputs and lets the user save and apply named combinations, including a Q30 hands-free call setup.
 
 ## Current Phase
-Phase 3: Build and verify the manual preset workflow. Device discovery, default selection, preset creation, application, and one-level restore are implemented; profile-aware device availability and live hardware verification remain.
+Phase 3: Finish and verify the manual preset workflow. Device discovery, profile switching, preset creation/application, restore, and unavailable-device status are implemented; preset editing and live hardware verification remain.
 
 ## Phases
 
@@ -33,7 +33,7 @@ Phase 3: Build and verify the manual preset workflow. Device discovery, default 
 - [ ] Add rename and delete actions for saved presets.
 - [x] Refresh device choices whenever the command opens.
 - [x] Keep saved presets when devices are disconnected.
-- [ ] Mark disconnected preset targets unavailable until they reconnect.
+- [x] Mark disconnected preset targets unavailable until they reconnect; still allow endpoints hidden by an available inactive profile.
 - [x] Add a direct card-profile action to the device list and refresh inventory after the profile changes.
 - [ ] Add a Q30 call preset using the available HFP/MSBC profile, then resolve its newly created input and output nodes.
 - [x] Apply saved profiles first, wait for requested endpoints, change system defaults only, verify the result, and roll back best-effort if a step fails.

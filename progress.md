@@ -80,6 +80,18 @@
   - `tests/profile-switching.test.ts`
   - `README.md`, `task_plan.md`
 
+### Phase 3: Show unavailable preset targets
+- **Status:** complete
+- Actions taken:
+  - Added profile-aware availability checks for saved presets.
+  - Endpoints hidden by another available profile remain applicable; disconnected cards or unavailable profiles are marked unavailable and have no Apply action.
+  - TDD: wrote the visibility behavior tests first, observed RED, implemented the model check and UI marker, then reached GREEN.
+  - Formatted, tested, built, and linted; all 16 behavior tests pass.
+- Files created/modified:
+  - `src/preset-model.ts`, `src/audio-devices.tsx`
+  - `tests/preset-availability.test.ts`
+  - `task_plan.md`
+
 ### Next slice
 - **Status:** pending
 - Show disconnected preset targets as unavailable, then verify the Q30 hands-free workflow against the live system and add rename/delete actions.
@@ -99,6 +111,7 @@
 | Apply rollback | Target endpoints remain absent after profile change | Roll back to prior profile/defaults and clear snapshot | Pass | ✓ |
 | Restore snapshot persistence | In-memory storage and a new store instance | Snapshot survives reload and clears after manual restore | Pass | ✓ |
 | Profile switching | Delayed fake card-profile update | Wait for selected profile, then return refreshed input/output inventory | Pass; first failed RED because profile helper was missing | ✓ |
+| Preset availability | Connected Q30 in A2DP, then disconnected Q30 | Treat HFP endpoints as reachable while HFP profile is available; otherwise mark unavailable | Pass; first failed RED because availability check was missing | ✓ |
 | Extension build/typecheck | `npm run build` | Typechecks and bundles the command | Pass | ✓ |
 | Manifest validation | `npm run lint` | Manifest accepted | Pass | ✓ |
 
@@ -119,8 +132,8 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Device inventory, default selection, direct preset creation, profile-aware apply, and manual restore are implemented. |
-| Where am I going? | Add direct profile switching, unavailable-device indicators, rename/delete, and live Q30 verification. |
+| Where am I? | Device inventory, default selection, direct profile switching, preset creation/application, restore, and unavailable-device indicators are implemented. |
+| Where am I going? | Add rename/delete, then complete live Q30 and disconnected-device verification. |
 | What's the goal? | Plan a Vicinae extension for audio device switching and saved activity presets. |
 | What have I learned? | See `findings.md`. |
 | What have I done? | Completed red-green inventory, selection, preset creation, application, and restore slices; the current extension builds and is registered in Vicinae development mode. |

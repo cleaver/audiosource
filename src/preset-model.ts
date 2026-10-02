@@ -131,3 +131,63 @@ export function captureRestoreSetup(
 
 	return { ...current, profiles: [...profiles.values()] };
 }
+
+export type PresetAvailability = {
+	available: boolean;
+	unavailableTargets: string[];
+};
+
+export function getPresetAvailability(
+	preset: AudioPresetDraft,
+	inventory: AudioInventory,
+): PresetAvailability {
+	const unavailableTargets: string[] = [];
+
+	for (const [endpoint, endpoints] of [
+		[preset.output, inventory.outputs],
+		[preset.input, inventory.inputs],
+	] as const) {
+		if (!endpoint) continue;
+		if (endpoints.some((candidate) => candidate.name === endpoint.name))
+			continue;
+
+		const deviceName = endpoint.deviceName;
+		const card = inventory.cards.find(
+			(candidate) => candidate.name === deviceName,
+		);
+		const targetProfile = preset.profiles.find(
+			(profile) => profile.cardName === deviceName,
+		);
+		const profileCanCreateEndpoint =
+			card !== undefined &&
+			targetProfile !== undefined &&
+			card.activeProfile !== targetProfile.profileName &&
+			card.profiles.some(
+				(profile) =>
+					profile.name === targetProfile.profileName && profile.available,
+			);
+		if (!profileCanCreateEndpoint)
+			unavailableTargets.push(endpoint.description);
+	}
+
+	for (const target of preset.profiles) {
+		const card = inventory.cards.find(
+			(candidate) => candidate.name === target.cardName,
+		);
+		if (!card) {
+			unavailableTargets.push(target.cardName);
+		} else if (
+			card.activeProfile !== target.profileName &&
+			!card.profiles.some(
+				(profile) => profile.name === target.profileName && profile.available,
+			)
+		) {
+			unavailableTargets.push(target.profileName);
+		}
+	}
+
+	return {
+		available: unavailableTargets.length === 0,
+		unavailableTargets,
+	};
+}
